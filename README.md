@@ -1,5 +1,6 @@
-## Hi there 👋
+## Hi, I’m Yit 👋
 
+Computer Science student at the University of Washington.  
 <!--
 **necromancerrr/necromancerrr** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 
