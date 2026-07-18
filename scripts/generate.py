@@ -16,7 +16,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,6 +40,7 @@ PURPLE = "#d2a8ff"
 def photo_to_ascii(path: Path, columns: int) -> list[str]:
     """Convert a photo to ASCII lines, keying out a flat background."""
     img = Image.open(path).convert("RGB")
+    img = img.filter(ImageFilter.UnsharpMask(radius=3, percent=140))
     rows = max(1, round(columns * img.height / img.width * CHAR_ASPECT))
     img = img.resize((columns, rows), Image.LANCZOS)
     px = img.load()
@@ -55,9 +56,19 @@ def photo_to_ascii(path: Path, columns: int) -> list[str]:
         return 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]
 
     # Stretch contrast over the subject only, so the full ramp gets used.
-    subject = [luma(px[x, y]) for y in range(rows) for x in range(columns) if not is_bg(px[x, y])]
-    lo, hi = (min(subject), max(subject)) if subject else (0, 255)
-    span = max(hi - lo, 1)
+    # Histogram-equalize the subject so every step of the ramp gets used,
+    # which keeps facial features from mushing into one midtone.
+    subject = sorted(luma(px[x, y]) for y in range(rows) for x in range(columns) if not is_bg(px[x, y]))
+
+    def rank(v):
+        lo, hi = 0, len(subject)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if subject[mid] < v:
+                lo = mid + 1
+            else:
+                hi = mid
+        return lo / max(len(subject) - 1, 1)
 
     lines = []
     for y in range(rows):
@@ -67,8 +78,7 @@ def photo_to_ascii(path: Path, columns: int) -> list[str]:
             if is_bg(p):
                 line += " "
             else:
-                t = ((luma(p) - lo) / span) ** 0.65  # gamma-boost midtones
-                line += RAMP[round(t * (len(RAMP) - 1))]
+                line += RAMP[round(rank(luma(p)) * (len(RAMP) - 1))]
         lines.append(line)
 
     # Drop fully blank top/bottom rows.
@@ -88,9 +98,10 @@ def build_svg(cfg: dict, ascii_lines: list[str]) -> str:
     columns = cfg["photo"]["columns"]
 
     # ------------------------------------------------------------ geometry
-    ascii_fs = 8.4                     # ASCII font size
-    ascii_lh = ascii_fs * 1.22         # ASCII line height
     ascii_w = 330                      # locked width of the ASCII block
+    cell_w = ascii_w / columns         # one character cell
+    ascii_fs = cell_w * 1.66           # ASCII font size
+    ascii_lh = cell_w / CHAR_ASPECT    # ASCII line height (keeps aspect true)
     pane_fs = 12.5
     pane_lh = 20
     pad = 30
