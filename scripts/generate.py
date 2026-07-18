@@ -12,6 +12,7 @@ Requires: Pillow  (pip install pillow)
 """
 
 import html
+import math
 import sys
 import tomllib
 from pathlib import Path
@@ -20,8 +21,13 @@ from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Character ramp, sparse -> dense. Dense chars = bright pixels on a dark bg.
-RAMP = " .`':,^-~=+*!?#%@"
+# Fill ramp, sparse -> dense. Dense chars = bright pixels on a dark bg.
+# Every glyph is clearly visible at small sizes, so the subject never
+# dissolves into blank-looking rows.
+FILL = "::,~=+*!#%@"
+
+# Directional glyphs for detected edges, indexed by edge orientation.
+EDGE = "|/-\\"
 
 # A monospace glyph is roughly half as tall as it is wide on screen.
 CHAR_ASPECT = 0.5
@@ -38,7 +44,13 @@ PURPLE = "#d2a8ff"
 
 
 def photo_to_ascii(path: Path, columns: int) -> list[str]:
-    """Convert a photo to ASCII lines, keying out a flat background."""
+    """Convert a photo to ASCII line art.
+
+    Flat regions get density glyphs from FILL (tone-quantized); detected
+    edges get directional glyphs from EDGE, which keeps outlines — where
+    a portrait's definition actually lives — crisp. Subject pixels never
+    map to a near-invisible glyph, so the silhouette stays continuous.
+    """
     img = Image.open(path).convert("RGB")
     img = img.filter(ImageFilter.UnsharpMask(radius=3, percent=140))
     rows = max(1, round(columns * img.height / img.width * CHAR_ASPECT))
@@ -55,30 +67,56 @@ def photo_to_ascii(path: Path, columns: int) -> list[str]:
     def luma(p):
         return 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]
 
-    # Stretch contrast over the subject only, so the full ramp gets used.
-    # Histogram-equalize the subject so every step of the ramp gets used,
-    # which keeps facial features from mushing into one midtone.
-    subject = sorted(luma(px[x, y]) for y in range(rows) for x in range(columns) if not is_bg(px[x, y]))
+    mask = [[not is_bg(px[x, y]) for x in range(columns)] for y in range(rows)]
+    # Luma field with background forced to 0, so the silhouette itself
+    # registers as a strong edge in the Sobel pass below.
+    F = [[luma(px[x, y]) if mask[y][x] else 0.0 for x in range(columns)] for y in range(rows)]
 
-    def rank(v):
-        lo, hi = 0, len(subject)
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if subject[mid] < v:
-                lo = mid + 1
-            else:
-                hi = mid
-        return lo / max(len(subject) - 1, 1)
+    # Detect edges on a blurred copy: structural lines (silhouette, brows,
+    # eyes, nose, mouth) survive the blur; fine hair-curl texture doesn't,
+    # so it renders as fill texture instead of scratchy line noise.
+    blur = Image.new("L", (columns, rows))
+    blur.putdata([round(v) for row in F for v in row])
+    blur = blur.filter(ImageFilter.GaussianBlur(1.1))
+    bp = blur.load()
+    S = [[bp[x, y] for x in range(columns)] for y in range(rows)]
+
+    # Percentile-clipped normalization of subject tones (full equalization
+    # posterizes flat cartoon shading into visible bands — avoid it).
+    tones = sorted(F[y][x] for y in range(rows) for x in range(columns) if mask[y][x])
+    lo = tones[int(len(tones) * 0.03)]
+    hi = tones[min(int(len(tones) * 0.97), len(tones) - 1)]
+    span = max(hi - lo, 1)
+
+    def sobel(y, x):
+        def f(yy, xx):
+            return S[min(max(yy, 0), rows - 1)][min(max(xx, 0), columns - 1)]
+
+        gx = (f(y - 1, x + 1) + 2 * f(y, x + 1) + f(y + 1, x + 1)
+              - f(y - 1, x - 1) - 2 * f(y, x - 1) - f(y + 1, x - 1))
+        # A char cell is ~2x taller than wide, so a vertical step spans
+        # twice the image distance; damp gy to compensate.
+        gy = (f(y + 1, x - 1) + 2 * f(y + 1, x) + f(y + 1, x + 1)
+              - f(y - 1, x - 1) - 2 * f(y - 1, x) - f(y - 1, x + 1)) * 0.5
+        return gx, gy
+
+    edge_th = 150  # Sobel magnitude above this renders as a line glyph
 
     lines = []
     for y in range(rows):
         line = ""
         for x in range(columns):
-            p = px[x, y]
-            if is_bg(p):
+            if not mask[y][x]:
                 line += " "
+                continue
+            gx, gy = sobel(y, x)
+            if (gx * gx + gy * gy) ** 0.5 > edge_th:
+                # The edge line runs perpendicular to the gradient.
+                phi = (math.atan2(gy, gx) + math.pi) % math.pi
+                line += EDGE[round(phi / (math.pi / 4)) % 4]
             else:
-                line += RAMP[round(rank(luma(p)) * (len(RAMP) - 1))]
+                t = min(max((F[y][x] - lo) / span, 0.0), 1.0) ** 1.35
+                line += FILL[round(t * (len(FILL) - 1))]
         lines.append(line)
 
     # Drop fully blank top/bottom rows.
@@ -146,7 +184,7 @@ def build_svg(cfg: dict, ascii_lines: list[str]) -> str:
 @keyframes bl {{ 0%, 45% {{ opacity: 1 }} 50%, 95% {{ opacity: 0 }} }}
 .rv {{ animation: rv .45s ease-out both }}
 .ty {{ animation: ty .9s steps(24) both; animation-delay: .3s }}
-.a  {{ animation: rv .12s steps(1) both }}
+.a  {{ animation: rv .18s ease-out both }}
 .cur {{ animation: rv .2s both, bl 1.1s step-end 4.2s infinite }}
 text {{ {'font-family:SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'} }}
 </style>""")
