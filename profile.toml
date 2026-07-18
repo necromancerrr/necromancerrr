@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------
+# Edit this file, then run:  python3 scripts/generate.py
+# It regenerates assets/header.svg from this config + the photo.
+# ---------------------------------------------------------------
+
+[photo]
+path = "assets/photo.png"   # swap this file to change the portrait
+columns = 64                # ASCII width in characters
+
+[terminal]
+title = "yitbarek@uw: ~"
+command = "./profile --render"
+prompt_user = "yitbarek"
+prompt_host = "uw"
+
+# Each [[panel]] block is a group of label/value rows,
+# separated by a blank line in the rendered output.
+
+[[panel]]
+rows = [
+  ["Name",    "Yitbarek Ejigu"],
+  ["Role",    "CS Undergrad · Software Engineer"],
+  ["School",  "University of Washington · BS CS '27"],
+  ["Base",    "Seattle, WA"],
+]
+
+[[panel]]
+rows = [
+  ["Now",     "Google Sprinternship · Break Through Tech"],
+  ["Next",    "LoopIn · CodePath AI Open Source Capstone"],
+]
+
+[[panel]]
+rows = [
+  ["Langs",   "Java · Python · C/C++ · TypeScript · Swift"],
+  ["Web",     "React · React Native · HTML/CSS"],
+  ["Cloud",   "Firebase · AWS · Google Cloud"],
+  ["Tools",   "Git · Docker · Claude Code · Figma · VS Code"],
+]
+
+[[panel]]
+rows = [
+  ["Mail",    "yejigu@uw.edu"],
+  ["Site",    "my-portfolio-eta-mocha-48.vercel.app"],
+  ["GitHub",  "necromancerrr"],
+]
