@@ -5,7 +5,7 @@
 
 [photo]
 path = "assets/photo.png"   # swap this file to change the portrait
-columns = 64                # ASCII width in characters
+columns = 78                # ASCII width in characters
 
 [terminal]
 title = "yitbarek@uw: ~"

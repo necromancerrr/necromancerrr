@@ -24,15 +24,3 @@
 [![Email](https://img.shields.io/badge/Email-yejigu%40uw.edu-3fb950?style=flat-square&logo=gmail&logoColor=white)](mailto:yejigu@uw.edu)
 
 </div>
-
-<details>
-<summary><sub>How this README works</sub></summary>
-<sub>
-
-- The header is a self-contained animated SVG — no JavaScript, degrades to a static image.
-- Regenerate it after editing `profile.toml` or swapping `assets/photo.png`:
-  `pip install pillow && python3 scripts/generate.py`
-- The contribution snake is redrawn daily by `.github/workflows/contribution-graph.yml` and published to the `output` branch.
-
-</sub>
-</details>
