@@ -26,16 +26,16 @@ rows = [
 
 [[panel]]
 rows = [
-  ["Now",     "Building LoopIn · UW Blockchain Society"],
-  ["Next",    "Google Sprinternship · Summer '26"],
+  ["Now",     "Google Sprinternship · Break Through Tech"],
+  ["Next",    "LoopIn · CodePath AI Open Source Capstone"],
 ]
 
 [[panel]]
 rows = [
   ["Langs",   "Java · Python · C/C++ · TypeScript · Swift"],
   ["Web",     "React · React Native · HTML/CSS"],
-  ["Cloud",   "Firebase · AWS · REST APIs"],
-  ["Tools",   "Git · Docker · Figma · VS Code"],
+  ["Cloud",   "Firebase · AWS · Google Cloud"],
+  ["Tools",   "Git · Docker · Claude Code · Figma · VS Code"],
 ]
 
 [[panel]]
