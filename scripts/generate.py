@@ -32,15 +32,23 @@ EDGE = "|/-\\"
 # A monospace glyph is roughly half as tall as it is wide on screen.
 CHAR_ASPECT = 0.5
 
-# ---------------------------------------------------------------- palette
-BG = "#0d1117"
-CHROME = "#161b22"
-BORDER = "#30363d"
-TEXT = "#e6edf3"
-DIM = "#8b949e"
-GREEN = "#3fb950"
-BLUE = "#79c0ff"
-PURPLE = "#d2a8ff"
+# --------------------------------------------------------------- palettes
+# GitHub-native colors; the README serves the matching variant through a
+# <picture> tag keyed on prefers-color-scheme.
+PALETTES = {
+    "dark": dict(
+        bg="#0d1117", chrome="#161b22", border="#30363d",
+        text="#e6edf3", dim="#8b949e",
+        green="#3fb950", blue="#79c0ff", purple="#d2a8ff",
+        grad_a="#7ee787", grad_b="#58a6ff",
+    ),
+    "light": dict(
+        bg="#ffffff", chrome="#f6f8fa", border="#d0d7de",
+        text="#1f2328", dim="#6e7781",
+        green="#1a7f37", blue="#0550ae", purple="#8250df",
+        grad_a="#1a7f37", grad_b="#0969da",
+    ),
+}
 
 
 def photo_to_ascii(path: Path, columns: int) -> list[str]:
@@ -131,7 +139,10 @@ def esc(s: str) -> str:
     return html.escape(s, quote=True)
 
 
-def build_svg(cfg: dict, ascii_lines: list[str]) -> str:
+def build_svg(cfg: dict, ascii_lines: list[str], pal: dict) -> str:
+    BG, CHROME, BORDER = pal["bg"], pal["chrome"], pal["border"]
+    TEXT, DIM = pal["text"], pal["dim"]
+    GREEN, BLUE, PURPLE = pal["green"], pal["blue"], pal["purple"]
     term = cfg["terminal"]
     columns = cfg["photo"]["columns"]
 
@@ -192,7 +203,7 @@ text {{ {'font-family:SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace'} 
     # gradient for the portrait
     out.append(
         f'<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
-        f'<stop offset="0" stop-color="#7ee787"/><stop offset="1" stop-color="#58a6ff"/>'
+        f'<stop offset="0" stop-color="{pal["grad_a"]}"/><stop offset="1" stop-color="{pal["grad_b"]}"/>'
         f'</linearGradient></defs>'
     )
 
@@ -267,10 +278,12 @@ def main() -> None:
     if not photo.exists():
         sys.exit(f"photo not found: {photo}")
     ascii_lines = photo_to_ascii(photo, cfg["photo"]["columns"])
-    svg = build_svg(cfg, ascii_lines)
-    out = ROOT / "assets" / "header.svg"
-    out.write_text(svg)
-    print(f"wrote {out.relative_to(ROOT)} ({len(svg) / 1024:.0f} KB, {len(ascii_lines)} ASCII rows)")
+    for name, pal in PALETTES.items():
+        svg = build_svg(cfg, ascii_lines, pal)
+        suffix = "" if name == "dark" else f"-{name}"
+        out = ROOT / "assets" / f"header{suffix}.svg"
+        out.write_text(svg)
+        print(f"wrote {out.relative_to(ROOT)} ({len(svg) / 1024:.0f} KB, {len(ascii_lines)} ASCII rows)")
 
 
 if __name__ == "__main__":
