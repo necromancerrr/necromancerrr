@@ -1,10 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/header.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/header-light.svg">
-  <img src="assets/header.svg" alt="yitbarek@uw — terminal profile: CS undergrad at the University of Washington, building LoopIn, Java/Python/C++/TypeScript" width="920">
-</picture>
+<img src="assets/header.svg" alt="yitbarek@uw — terminal profile: CS undergrad at the University of Washington, building LoopIn, Java/Python/C++/TypeScript" width="920">
 
 </div>
 
