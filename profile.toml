@@ -26,8 +26,8 @@ rows = [
 
 [[panel]]
 rows = [
-  ["Now",     "Google Sprinternship · Break Through Tech"],
-  ["Next",    "LoopIn · CodePath AI Open Source Capstone"],
+  ["Now",     "LoopIn · Startup"],
+  ["Next",    "Supabase Alternative"],
 ]
 
 [[panel]]
